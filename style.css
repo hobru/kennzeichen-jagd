@@ -188,3 +188,7 @@ main{padding:16px 14px calc(84px + env(safe-area-inset-bottom));max-width:640px;
   .plate-input{font-size:52px}
   .plate-rest{font-size:44px}
 }
+
+/* Versionsanzeige */
+.topbar-right{display:flex;align-items:center;gap:8px}
+.ver{font-size:11px;color:#5F666C}

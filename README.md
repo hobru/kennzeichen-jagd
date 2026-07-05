@@ -38,6 +38,7 @@ Eine Progressive Web App (PWA) zum Sammeln deutscher Kfz-Unterscheidungszeichen:
 | `app.js` | Logik: Lookup, GPS, Liste, Karte, Statistik, Backup |
 | `data.js` | Mitgelieferter Datenstand der Unterscheidungszeichen |
 | `sw.js` | Service Worker (Offline-Fähigkeit) |
+| `version.js` | Versionsnummer – **bei jedem Release hier hochzählen** (aktualisiert Anzeige und Offline-Cache) |
 | `manifest.webmanifest`, `icon-*.png` | PWA-Installation |
 
 ## Datenquelle & Lizenz-Hinweis

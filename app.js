@@ -509,6 +509,9 @@
   initDataset();
   wire();
   renderAll();
+  const V = window.APP_VERSION || "?";
+  $("verTop").textContent = "v" + V;
+  $("aboutLine").textContent = "Kennzeichen-Jagd v" + V;
   setTimeout(() => $("plateInput").focus(), 50);
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () =>

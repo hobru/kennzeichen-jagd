@@ -1,11 +1,13 @@
 /* Kennzeichen-Jagd Service Worker – App-Shell offline verfügbar machen */
-const CACHE = "kj-shell-v4";
+importScripts("./version.js");
+const CACHE = "kj-shell-v" + self.APP_VERSION;
 const SHELL = [
   "./",
   "./index.html",
   "./style.css",
   "./app.js",
   "./data.js",
+  "./version.js",
   "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png",
