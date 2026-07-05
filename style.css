@@ -226,3 +226,7 @@ main{padding:16px 14px calc(84px + env(safe-area-inset-bottom));max-width:640px;
 }
 .updbar .btn{margin-top:0;background:#fff;color:var(--eu);border-color:#fff}
 .updbar .btn:hover{background:#E8ECFA}
+
+/* Popup-Links */
+.leaflet-popup-content a{color:var(--eu);font-weight:600;text-decoration:none}
+.leaflet-popup-content a:hover{text-decoration:underline}

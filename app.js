@@ -51,7 +51,7 @@
   let byCode = new Map();
   let spots = loadJSON(LS.spots, []);   // {code, city, state, ts, lat, lon}
   let current = null;                    // aktuell nachgeschlagener Eintrag
-  let map = null, markers = null;
+  let map = null, markers = null, tempGroup = null;
 
   function setDataset(rows, info) {
     dataset = rows.slice().sort((a, b) => a[0].localeCompare(b[0], "de"));
@@ -263,6 +263,25 @@
     else map.fitBounds(points, { padding: [30, 30], maxZoom: 12 });
   }
 
+  async function geocodeOne(code) {
+    if (code in geoCache) return geoCache[code];
+    const entry = byCode.get(code);
+    if (!entry) return (geoCache[code] = null);
+    const place = entry[1].split(",")[0].trim();
+    const q = encodeURIComponent(
+      place + ", " + (STATES[entry[2]] || "") + ", Deutschland");
+    try {
+      const res = await fetch(
+        "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + q,
+        { headers: { Accept: "application/json" } });
+      const js = await res.json();
+      geoCache[code] = js && js[0]
+        ? [parseFloat(js[0].lat), parseFloat(js[0].lon)] : null;
+      saveJSON(LS.geo, geoCache);
+    } catch (_) { return undefined; }   // Netzfehler: nicht als "unbekannt" cachen
+    return geoCache[code];
+  }
+
   async function geocodeMissing(codes) {
     if (geoRunning) return;
     geoRunning = true;
@@ -272,31 +291,55 @@
       if (mapMode !== "herkunft") break;   // Nutzer hat umgeschaltet
       st.textContent = "Herkunftsorte werden ermittelt … " +
         (i + 1) + " / " + missing.length;
-      const entry = byCode.get(missing[i]);
-      if (!entry) { geoCache[missing[i]] = null; continue; }
-      const place = entry[1].split(",")[0].trim();
-      const q = encodeURIComponent(
-        place + ", " + (STATES[entry[2]] || "") + ", Deutschland");
-      try {
-        const res = await fetch(
-          "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + q,
-          { headers: { Accept: "application/json" } });
-        const js = await res.json();
-        geoCache[missing[i]] = js && js[0]
-          ? [parseFloat(js[0].lat), parseFloat(js[0].lon)] : null;
-      } catch (_) {
-        break;                              // offline o. ä. – später erneut
-      }
-      saveJSON(LS.geo, geoCache);
+      const r = await geocodeOne(missing[i]);
+      if (r === undefined) break;          // offline o. ä. – später erneut
       if (mapMode === "herkunft") drawMarkers();  // Karte fortlaufend füllen
-      await new Promise((r) => setTimeout(r, 1100)); // Nominatim: max. 1 Anfrage/s
+      await new Promise((res) => setTimeout(res, 1100)); // Nominatim: max. 1 Anfrage/s
     }
     st.textContent = "";
     geoRunning = false;
   }
 
+  // Sprung zwischen Sichtungsort und Herkunftsort (Links im Popup)
+  function jumpTo(pos, zoom) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+      map.setView(pos, zoom);
+    else map.flyTo(pos, zoom);
+  }
+  async function gotoOrigin(code) {
+    const st = $("mapStatus"), spot = findSpot(code);
+    st.textContent = "Suche Herkunftsort …";
+    const pos = await geocodeOne(code);
+    st.textContent = "";
+    if (!pos) { st.textContent = "Herkunftsort nicht gefunden."; return; }
+    tempGroup.clearLayers();
+    const m = L.circleMarker(pos, {
+      radius: 10, color: "#003399", weight: 2,
+      fillColor: "#2450C7", fillOpacity: 0.85,
+    }).addTo(tempGroup)
+      .bindPopup("<b>" + esc(code) + "</b> – Herkunft: " +
+        esc(spot ? spot.city : (byCode.get(code) || ["", "?"])[1]) +
+        (spot && spot.lat != null
+          ? '<br><a href="#" class="goto-spot" data-code="' + esc(code) + '">→ Sichtungsort anzeigen</a>'
+          : ""));
+    jumpTo(pos, 9);
+    setTimeout(() => m.openPopup(), 400);
+  }
+  function gotoSpot(code) {
+    const s = findSpot(code);
+    if (!s || s.lat == null) { $("mapStatus").textContent = "Keine GPS-Position gespeichert."; return; }
+    tempGroup.clearLayers();
+    const m = L.marker([s.lat, s.lon]).addTo(tempGroup)
+      .bindPopup("<b>" + esc(s.code) + "</b> – " + esc(s.city) +
+        "<br>gesichtet am " + esc(fmtDate(s.ts)) +
+        '<br><a href="#" class="goto-origin" data-code="' + esc(s.code) + '">→ Herkunft anzeigen</a>');
+    jumpTo([s.lat, s.lon], 12);
+    setTimeout(() => m.openPopup(), 400);
+  }
+
   function drawMarkers() {
     markers.clearLayers();
+    tempGroup.clearLayers();
     const st = $("mapStatus");
     let points = [];
 
@@ -311,7 +354,10 @@
           fillColor: "#2450C7", fillOpacity: 0.85,
         }).addTo(markers)
           .bindPopup("<b>" + esc(s.code) + "</b> – " + esc(s.city) +
-                     "<br>gesichtet am " + esc(fmtDate(s.ts)));
+                     "<br>gesichtet am " + esc(fmtDate(s.ts)) +
+                     (s.lat != null
+                       ? '<br><a href="#" class="goto-spot" data-code="' + esc(s.code) + '">→ Sichtungsort anzeigen</a>'
+                       : ""));
       });
     } else {
       const withPos = spots.filter((s) => s.lat != null)
@@ -324,7 +370,8 @@
         L.marker([s.lat, s.lon]).addTo(markers)
           .bindPopup("<b>" + esc(s.code) + "</b> – " + esc(s.city) +
                      "<br>" + esc(fmtDate(s.ts)) +
-                     (mapMode === "letzte" ? "<br><i>letzte Sichtung</i>" : ""));
+                     (mapMode === "letzte" ? "<br><i>letzte Sichtung</i>" : "") +
+                     '<br><a href="#" class="goto-origin" data-code="' + esc(s.code) + '">→ Herkunft anzeigen</a>');
       });
       if (mapMode === "letzte" && show.length) {
         markers.getLayers()[0].openPopup();
@@ -342,6 +389,15 @@
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       }).addTo(map);
       markers = L.layerGroup().addTo(map);
+      tempGroup = L.layerGroup().addTo(map);
+      // Klicks auf die Sprung-Links in den Popups
+      $("map").addEventListener("click", (e) => {
+        const a = e.target.closest("a.goto-origin, a.goto-spot");
+        if (!a) return;
+        e.preventDefault();
+        if (a.classList.contains("goto-origin")) gotoOrigin(a.dataset.code);
+        else gotoSpot(a.dataset.code);
+      });
     }
     drawMarkers();
     if (mapMode === "herkunft") {
