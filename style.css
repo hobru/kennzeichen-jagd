@@ -95,6 +95,7 @@ main{padding:16px 14px calc(84px + env(safe-area-inset-bottom));max-width:640px;
 .res-city{font-size:24px;font-weight:600;margin-top:4px}
 .res-meta{display:flex;justify-content:space-between;gap:8px;margin-top:2px;color:var(--grau)}
 .dup{margin-top:12px;border-left:4px solid var(--warn);background:#2A2419;padding:10px 12px;border-radius:0 8px 8px 0;color:#E8C888}
+.dup.ok{border-left-color:var(--plakette);background:#1B2A20;color:#9FD8AF}
 .gps{margin-top:10px;min-height:1.2em}
 
 /* ── Buttons ── */
@@ -141,7 +142,10 @@ main{padding:16px 14px calc(84px + env(safe-area-inset-bottom));max-width:640px;
 .empty{color:var(--grau);text-align:center;margin-top:32px}
 
 /* ── Karte ── */
-.map{height:calc(100dvh - 220px);min-height:340px;border-radius:var(--r);border:1px solid var(--linie)}
+.maptool{display:flex;background:var(--night);border:1px solid var(--linie);border-radius:var(--r);overflow:hidden;margin-bottom:10px}
+.mapbtn{flex:1;background:transparent;border:0;color:var(--grau);padding:10px 4px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent}
+.mapbtn.active{color:var(--schild);border-bottom-color:var(--eu-hell);background:#23272B}
+.map{height:calc(100dvh - 300px);min-height:320px;border-radius:var(--r);border:1px solid var(--linie)}
 .leaflet-container{background:#101214}
 
 /* ── Statistik ── */
@@ -178,20 +182,6 @@ main{padding:16px 14px calc(84px + env(safe-area-inset-bottom));max-width:640px;
   font-weight:600;font-size:13px;cursor:pointer;border-top:3px solid transparent;
 }
 .tabbtn.active{color:var(--schild);border-top-color:var(--eu-hell)}
-
-/* ── Sperrbildschirm ── */
-.lock{position:fixed;inset:0;background:var(--asphalt);z-index:50;display:flex;align-items:center;justify-content:center;padding:20px}
-.lock-card{width:100%;max-width:340px;text-align:center}
-.lock-plate{display:flex;align-items:stretch;background:var(--schild);border:2.5px solid #000;border-radius:10px;overflow:hidden;margin:0 auto 18px;width:max-content}
-.lock-title{color:var(--praegung);font-family:var(--f-plate);font-weight:700;font-size:26px;letter-spacing:.08em;padding:8px 16px}
-.lock-msg{color:#C7CBCE;min-height:2.6em}
-.pin-input{
-  width:100%;background:var(--night);border:1px solid var(--linie);border-radius:var(--r);
-  color:var(--schild);font-family:var(--f-mono);font-size:26px;letter-spacing:.5em;text-align:center;
-  padding:12px;outline:none
-}
-.lock .btn{width:100%}
-.lock-hint{color:var(--grau);font-size:13px;margin-top:18px}
 
 @media (min-width:520px){
   .plate{height:84px}

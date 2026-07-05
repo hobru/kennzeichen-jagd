@@ -19,23 +19,8 @@
 </head>
 <body>
 
-<!-- ── Sperrbildschirm ─────────────────────────────── -->
-<div id="lock" class="lock hidden" role="dialog" aria-modal="true" aria-label="PIN-Sperre">
-  <div class="lock-card">
-    <div class="lock-plate" aria-hidden="true">
-      <span class="euroband"><span class="stars">★</span><span class="d">D</span></span>
-      <span class="lock-title">KJ&nbsp;·&nbsp;PIN</span>
-    </div>
-    <p id="lockMsg" class="lock-msg">PIN eingeben, um fortzufahren.</p>
-    <input id="pinInput" class="pin-input" type="password" inputmode="numeric" autocomplete="off"
-           pattern="[0-9]*" maxlength="8" aria-label="PIN">
-    <button id="pinBtn" class="btn btn-primary">Entsperren</button>
-    <p class="lock-hint">Die PIN schützt nur die Anzeige auf diesem Gerät – alle Daten bleiben lokal im Browser.</p>
-  </div>
-</div>
-
 <!-- ── App ─────────────────────────────────────────── -->
-<div id="app" class="app hidden">
+<div id="app" class="app">
 
   <header class="topbar">
     <div class="topbar-plate" aria-hidden="true">
@@ -88,7 +73,13 @@
 
     <!-- Karte -->
     <section id="tab-karte" class="tab">
+      <div class="maptool" role="group" aria-label="Kartenansicht wählen">
+        <button class="mapbtn active" data-mode="alle">Sichtungen</button>
+        <button class="mapbtn" data-mode="letzte">Letzte</button>
+        <button class="mapbtn" data-mode="herkunft">Herkunft</button>
+      </div>
       <div id="map" class="map"></div>
+      <div id="mapStatus" class="mono status" aria-live="polite"></div>
       <p id="mapEmpty" class="empty">Sobald Sichtungen mit GPS-Position vorliegen, erscheinen sie hier als Marker.</p>
     </section>
 
@@ -121,9 +112,6 @@
       <label class="btn btn-file" for="importFile">Backup importieren (JSON)</label>
       <input id="importFile" type="file" accept="application/json,.json" class="visually-hidden">
       <div id="importStatus" class="mono status" aria-live="polite"></div>
-
-      <h2 class="h2">Sicherheit</h2>
-      <button id="changePinBtn" class="btn">PIN ändern</button>
 
       <h2 class="h2">Gefahrenzone</h2>
       <button id="wipeBtn" class="btn btn-danger">Alle Sichtungen löschen</button>

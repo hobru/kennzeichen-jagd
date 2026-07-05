@@ -8,8 +8,9 @@
   const LS = {
     spots: "kj_spots_v1",
     dataset: "kj_dataset_v1",
-    pin: "kj_pin_v1",
+    geo: "kj_geo_v1",
   };
+  localStorage.removeItem("kj_pin_v1"); // Altlast aus früherer Version entfernen
   const STATES = {
     BW: "Baden-Württemberg", BY: "Bayern", BE: "Berlin", BB: "Brandenburg",
     HB: "Bremen", HH: "Hamburg", HE: "Hessen", MV: "Mecklenburg-Vorpommern",
@@ -35,12 +36,6 @@
     } catch (_) { return fallback; }
   }
   function saveJSON(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
-  async function sha256(text) {
-    const buf = await crypto.subtle.digest("SHA-256",
-      new TextEncoder().encode("kj-salt::" + text));
-    return Array.from(new Uint8Array(buf))
-      .map((b) => b.toString(16).padStart(2, "0")).join("");
-  }
   function download(filename, text, mime) {
     const blob = new Blob([text], { type: mime });
     const a = document.createElement("a");
@@ -161,7 +156,7 @@
     box.classList.remove("hidden");
   }
 
-  function showResult(code) {
+  function showResult(code, justSaved) {
     const entry = byCode.get(code);
     const box = $("resultBox");
     if (!entry) { box.classList.add("hidden"); current = null; return; }
@@ -172,17 +167,23 @@
     $("resHerleitung").textContent = entry[3] ? "„" + entry[3] + "“" : "";
     const dup = findSpot(code);
     const badge = $("resBadge"), dupBox = $("dupInfo"), save = $("saveBtn");
-    if (dup) {
+    const coords = dup && dup.lat != null
+      ? ' <span class="mono">(' + dup.lat.toFixed(4) + ", " + dup.lon.toFixed(4) + ")</span>"
+      : "";
+    if (dup && justSaved) {
       badge.textContent = "Gesammelt"; badge.className = "badge";
-      dupBox.innerHTML = "Bereits gesichtet am <b>" + esc(fmtDate(dup.ts)) + "</b>" +
-        (dup.lat != null
-          ? ' <span class="mono">(' + dup.lat.toFixed(4) + ", " + dup.lon.toFixed(4) + ")</span>"
-          : "");
-      dupBox.classList.remove("hidden");
+      dupBox.innerHTML = "✓ Neu in der Sammlung! Gespeichert am <b>" +
+        esc(fmtDate(dup.ts)) + "</b>" + coords;
+      dupBox.className = "dup ok";
+      save.disabled = true; save.textContent = "Gespeichert ✓";
+    } else if (dup) {
+      badge.textContent = "Gesammelt"; badge.className = "badge";
+      dupBox.innerHTML = "Bereits gesichtet am <b>" + esc(fmtDate(dup.ts)) + "</b>" + coords;
+      dupBox.className = "dup";
       save.disabled = true; save.textContent = "Schon in der Sammlung";
     } else {
       badge.textContent = "Neu!"; badge.className = "badge warn";
-      dupBox.classList.add("hidden");
+      dupBox.className = "dup hidden";
       save.disabled = false; save.textContent = "Sichtung speichern";
     }
     $("gpsStatus").textContent = "";
@@ -225,7 +226,7 @@
     $("lastSpot").textContent =
       "Zuletzt: " + spot.code + " – " + spot.city + " (" + fmtDate(spot.ts) + ")";
     $("lastSpot").classList.remove("hidden");
-    showResult(spot.code);           // zeigt jetzt den Duplikat-Zustand
+    showResult(spot.code, true);     // grüne Bestätigung statt Duplikat-Warnung
     renderAll();
     $("plateInput").select();
   }
@@ -252,9 +253,87 @@
   }
 
   // ── Karte ───────────────────────────────────────────────────
+  let mapMode = "alle";
+  let geoCache = loadJSON(LS.geo, {});   // { code: [lat, lon] | null }
+  let geoRunning = false;
+
+  function fitTo(points) {
+    if (!points.length) return;
+    if (points.length === 1) map.setView(points[0], 11);
+    else map.fitBounds(points, { padding: [30, 30], maxZoom: 12 });
+  }
+
+  async function geocodeMissing(codes) {
+    if (geoRunning) return;
+    geoRunning = true;
+    const st = $("mapStatus");
+    const missing = codes.filter((c) => !(c in geoCache));
+    for (let i = 0; i < missing.length; i++) {
+      if (mapMode !== "herkunft") break;   // Nutzer hat umgeschaltet
+      st.textContent = "Herkunftsorte werden ermittelt … " +
+        (i + 1) + " / " + missing.length;
+      const entry = byCode.get(missing[i]);
+      if (!entry) { geoCache[missing[i]] = null; continue; }
+      const place = entry[1].split(",")[0].trim();
+      const q = encodeURIComponent(
+        place + ", " + (STATES[entry[2]] || "") + ", Deutschland");
+      try {
+        const res = await fetch(
+          "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + q,
+          { headers: { Accept: "application/json" } });
+        const js = await res.json();
+        geoCache[missing[i]] = js && js[0]
+          ? [parseFloat(js[0].lat), parseFloat(js[0].lon)] : null;
+      } catch (_) {
+        break;                              // offline o. ä. – später erneut
+      }
+      saveJSON(LS.geo, geoCache);
+      if (mapMode === "herkunft") drawMarkers();  // Karte fortlaufend füllen
+      await new Promise((r) => setTimeout(r, 1100)); // Nominatim: max. 1 Anfrage/s
+    }
+    st.textContent = "";
+    geoRunning = false;
+  }
+
+  function drawMarkers() {
+    markers.clearLayers();
+    const st = $("mapStatus");
+    let points = [];
+
+    if (mapMode === "herkunft") {
+      $("mapEmpty").classList.toggle("hidden", spots.length > 0);
+      spots.forEach((s) => {
+        const pos = geoCache[s.code];
+        if (!pos) return;
+        points.push(pos);
+        L.circleMarker(pos, {
+          radius: 9, color: "#003399", weight: 2,
+          fillColor: "#2450C7", fillOpacity: 0.85,
+        }).addTo(markers)
+          .bindPopup("<b>" + esc(s.code) + "</b> – " + esc(s.city) +
+                     "<br>gesichtet am " + esc(fmtDate(s.ts)));
+      });
+    } else {
+      const withPos = spots.filter((s) => s.lat != null)
+        .sort((a, b) => b.ts - a.ts);
+      const show = mapMode === "letzte" ? withPos.slice(0, 1) : withPos;
+      $("mapEmpty").classList.toggle("hidden", withPos.length > 0);
+      st.textContent = "";
+      show.forEach((s) => {
+        points.push([s.lat, s.lon]);
+        L.marker([s.lat, s.lon]).addTo(markers)
+          .bindPopup("<b>" + esc(s.code) + "</b> – " + esc(s.city) +
+                     "<br>" + esc(fmtDate(s.ts)) +
+                     (mapMode === "letzte" ? "<br><i>letzte Sichtung</i>" : ""));
+      });
+      if (mapMode === "letzte" && show.length) {
+        markers.getLayers()[0].openPopup();
+      }
+    }
+    fitTo(points);
+  }
+
   function renderMap() {
-    const withPos = spots.filter((s) => s.lat != null);
-    $("mapEmpty").classList.toggle("hidden", withPos.length > 0);
     if (typeof L === "undefined") return;
     if (!map) {
       map = L.map("map", { zoomControl: true }).setView([51.163, 10.447], 6);
@@ -264,14 +343,9 @@
       }).addTo(map);
       markers = L.layerGroup().addTo(map);
     }
-    markers.clearLayers();
-    withPos.forEach((s) => {
-      L.marker([s.lat, s.lon]).addTo(markers)
-        .bindPopup("<b>" + esc(s.code) + "</b> – " + esc(s.city) +
-                   "<br>" + esc(fmtDate(s.ts)));
-    });
-    if (withPos.length) {
-      map.fitBounds(withPos.map((s) => [s.lat, s.lon]), { padding: [30, 30], maxZoom: 12 });
+    drawMarkers();
+    if (mapMode === "herkunft") {
+      geocodeMissing(Array.from(new Set(spots.map((s) => s.code))));
     }
     setTimeout(() => map.invalidateSize(), 60);
   }
@@ -359,63 +433,6 @@
     reader.readAsText(file);
   }
 
-  // ── PIN-Sperre ──────────────────────────────────────────────
-  async function initLock() {
-    const stored = localStorage.getItem(LS.pin);
-    const lock = $("lock"), msg = $("lockMsg"),
-      input = $("pinInput"), btn = $("pinBtn");
-    if (sessionStorage.getItem("kj_unlocked") === "1" && stored) {
-      $("app").classList.remove("hidden"); return;
-    }
-    lock.classList.remove("hidden");
-    let firstPin = null;
-    if (!stored) {
-      msg.textContent = "Willkommen! Lege eine PIN fest (mind. 4 Ziffern).";
-      btn.textContent = "PIN festlegen";
-    }
-    async function submit() {
-      const val = input.value.trim();
-      if (!/^\d{4,8}$/.test(val)) {
-        msg.textContent = "Bitte 4–8 Ziffern eingeben."; input.value = ""; return;
-      }
-      if (!localStorage.getItem(LS.pin)) {
-        if (firstPin === null) {
-          firstPin = val; input.value = "";
-          msg.textContent = "PIN zur Bestätigung erneut eingeben.";
-          return;
-        }
-        if (val !== firstPin) {
-          firstPin = null; input.value = "";
-          msg.textContent = "Die PINs stimmen nicht überein – nochmal von vorn.";
-          btn.textContent = "PIN festlegen";
-          return;
-        }
-        localStorage.setItem(LS.pin, await sha256(val));
-      } else if (await sha256(val) !== localStorage.getItem(LS.pin)) {
-        msg.textContent = "Falsche PIN."; input.value = ""; return;
-      }
-      sessionStorage.setItem("kj_unlocked", "1");
-      lock.classList.add("hidden");
-      $("app").classList.remove("hidden");
-      setTimeout(() => $("plateInput").focus(), 50);
-    }
-    btn.addEventListener("click", submit);
-    input.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
-    input.focus();
-  }
-  async function changePin() {
-    const cur = prompt("Aktuelle PIN eingeben:");
-    if (cur === null) return;
-    if (await sha256(cur.trim()) !== localStorage.getItem(LS.pin)) {
-      alert("Falsche PIN."); return;
-    }
-    const neu = prompt("Neue PIN (4–8 Ziffern):");
-    if (neu === null) return;
-    if (!/^\d{4,8}$/.test(neu.trim())) { alert("Bitte 4–8 Ziffern."); return; }
-    localStorage.setItem(LS.pin, await sha256(neu.trim()));
-    alert("PIN geändert.");
-  }
-
   // ── Verdrahtung ─────────────────────────────────────────────
   function wire() {
     const input = $("plateInput");
@@ -461,13 +478,20 @@
       if (e.target.files[0]) importJSON(e.target.files[0]);
       e.target.value = "";
     });
-    $("changePinBtn").addEventListener("click", changePin);
     $("wipeBtn").addEventListener("click", () => {
       if (!confirm("Wirklich ALLE Sichtungen unwiderruflich löschen?")) return;
       if (!confirm("Letzte Chance – Sammlung komplett leeren?")) return;
       spots = [];
       saveJSON(LS.spots, spots);
       renderAll();
+    });
+    document.querySelectorAll(".mapbtn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        mapMode = btn.dataset.mode;
+        document.querySelectorAll(".mapbtn").forEach((b) =>
+          b.classList.toggle("active", b === btn));
+        renderMap();
+      });
     });
     document.querySelectorAll(".tabbtn").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -485,7 +509,7 @@
   initDataset();
   wire();
   renderAll();
-  initLock();
+  setTimeout(() => $("plateInput").focus(), 50);
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () =>
       navigator.serviceWorker.register("./sw.js").catch(() => {}));

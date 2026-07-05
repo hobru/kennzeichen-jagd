@@ -1,6 +1,6 @@
 # Kennzeichen-Jagd 🇩🇪
 
-Eine Progressive Web App (PWA) zum Sammeln deutscher Kfz-Unterscheidungszeichen: Kürzel eingeben, Stadt/Kreis nachschlagen, Sichtung mit GPS-Position und Zeitstempel speichern. Mit Liste, Karte, Bundesland-Statistik, Backup-Export/-Import und PIN-Sperre. Alle Daten bleiben lokal im Browser.
+Eine Progressive Web App (PWA) zum Sammeln deutscher Kfz-Unterscheidungszeichen: Kürzel eingeben, Stadt/Kreis nachschlagen, Sichtung mit GPS-Position und Zeitstempel speichern. Mit Liste, Karte, Bundesland-Statistik und Backup-Export/-Import. Alle Daten bleiben lokal im Browser.
 
 ## Deployment auf GitHub Pages (5 Minuten)
 
@@ -22,7 +22,6 @@ Eine Progressive Web App (PWA) zum Sammeln deutscher Kfz-Unterscheidungszeichen:
 - **Statistik:** Gesamt-Fortschritt und Fortschritt je Bundesland.
 - **Datenbank:** ~714 Unterscheidungszeichen sind mitgeliefert (`data.js`). Unter **Mehr → Liste jetzt aktualisieren** wird die aktuelle Liste von [openpotato/kfz-kennzeichen](https://github.com/openpotato/kfz-kennzeichen) geladen und lokal gecacht.
 - **Backup:** Export als JSON (vollständig, re-importierbar) oder CSV (für Excel). Import führt Backups zusammen, ohne Duplikate anzulegen.
-- **PIN-Sperre:** Beim ersten Start wird eine PIN festgelegt. Hinweis: Das ist ein Sichtschutz, keine echte Verschlüsselung – die Daten liegen ohnehin nur lokal auf deinem Gerät.
 
 ## Grenzen & Hinweise
 
@@ -36,7 +35,7 @@ Eine Progressive Web App (PWA) zum Sammeln deutscher Kfz-Unterscheidungszeichen:
 |---|---|
 | `index.html` | App-Gerüst |
 | `style.css` | Design (Kennzeichen-Optik) |
-| `app.js` | Logik: Lookup, GPS, Liste, Karte, Statistik, Backup, PIN |
+| `app.js` | Logik: Lookup, GPS, Liste, Karte, Statistik, Backup |
 | `data.js` | Mitgelieferter Datenstand der Unterscheidungszeichen |
 | `sw.js` | Service Worker (Offline-Fähigkeit) |
 | `manifest.webmanifest`, `icon-*.png` | PWA-Installation |
