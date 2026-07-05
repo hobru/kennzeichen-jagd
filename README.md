@@ -6,10 +6,11 @@ Eine Progressive Web App (PWA) zum Sammeln deutscher Kfz-Unterscheidungszeichen:
 
 1. Neues **öffentliches** Repository anlegen, z. B. `kennzeichen-jagd` (unter deinem Account `hobru`).
 2. Alle Dateien aus diesem Ordner in das Repository hochladen (Web-Upload reicht: *Add file → Upload files*).
-3. Im Repository: **Settings → Pages → Source: Deploy from a branch → Branch: `main` / root → Save**.
-4. Nach ~1 Minute ist die App erreichbar unter:
+3. Im Repository: **Settings → Pages → Source: GitHub Actions** auswählen.
+4. Der mitgelieferte Workflow **Deploy GitHub Pages** veröffentlicht die statischen Dateien automatisch bei jedem Push auf `main`.
+5. Nach ~1 Minute ist die App erreichbar unter:
    `https://hobru.github.io/kennzeichen-jagd/`
-5. Auf dem Handy im Browser öffnen → **„Zum Startbildschirm hinzufügen"** → die App verhält sich wie eine native App (auch offline nutzbar, außer Kartenkacheln).
+6. Auf dem Handy im Browser öffnen → **„Zum Startbildschirm hinzufügen"** → die App verhält sich wie eine native App (auch offline nutzbar, außer Kartenkacheln).
 
 > Wichtig: GPS (Geolocation API) funktioniert nur über HTTPS – GitHub Pages liefert das automatisch. Beim ersten Speichern fragt der Browser nach der Standort-Berechtigung.
 
