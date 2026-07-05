@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17191C">
+<title>Kennzeichen-Jagd</title>
+<meta name="description" content="Deutsche Kfz-Kennzeichen spotten und sammeln – mit Standort, Karte und Statistik.">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<!-- ── Sperrbildschirm ─────────────────────────────── -->
+<div id="lock" class="lock hidden" role="dialog" aria-modal="true" aria-label="PIN-Sperre">
+  <div class="lock-card">
+    <div class="lock-plate" aria-hidden="true">
+      <span class="euroband"><span class="stars">★</span><span class="d">D</span></span>
+      <span class="lock-title">KJ&nbsp;·&nbsp;PIN</span>
+    </div>
+    <p id="lockMsg" class="lock-msg">PIN eingeben, um fortzufahren.</p>
+    <input id="pinInput" class="pin-input" type="password" inputmode="numeric" autocomplete="off"
+           pattern="[0-9]*" maxlength="8" aria-label="PIN">
+    <button id="pinBtn" class="btn btn-primary">Entsperren</button>
+    <p class="lock-hint">Die PIN schützt nur die Anzeige auf diesem Gerät – alle Daten bleiben lokal im Browser.</p>
+  </div>
+</div>
+
+<!-- ── App ─────────────────────────────────────────── -->
+<div id="app" class="app hidden">
+
+  <header class="topbar">
+    <div class="topbar-plate" aria-hidden="true">
+      <span class="euroband small"><span class="stars">★</span><span class="d">D</span></span>
+      <span class="app-name">KENNZEICHEN&#8202;-&#8202;JAGD</span>
+    </div>
+    <div id="progressChip" class="chip" title="Gesammelte Unterscheidungszeichen">0 / 0</div>
+  </header>
+
+  <main>
+
+    <!-- Erfassen -->
+    <section id="tab-erfassen" class="tab active">
+      <label class="visually-hidden" for="plateInput">Unterscheidungszeichen eingeben</label>
+      <div class="plate" id="plateBox">
+        <span class="euroband" aria-hidden="true"><span class="stars">★</span><span class="d">D</span></span>
+        <input id="plateInput" class="plate-input" type="text" autocomplete="off" autocapitalize="characters"
+               spellcheck="false" placeholder="FL" aria-describedby="resultBox">
+        <span class="plate-rest" aria-hidden="true">– XX 123</span>
+      </div>
+      <ul id="suggest" class="suggest hidden" role="listbox"></ul>
+
+      <div id="resultBox" class="result hidden" aria-live="polite">
+        <div class="result-head">
+          <span id="resCode" class="res-code"></span>
+          <span id="resBadge" class="badge hidden"></span>
+        </div>
+        <div id="resCity" class="res-city"></div>
+        <div class="res-meta">
+          <span id="resState"></span>
+          <span id="resHerleitung" class="mono"></span>
+        </div>
+        <div id="dupInfo" class="dup hidden"></div>
+        <button id="saveBtn" class="btn btn-primary btn-big">Sichtung speichern</button>
+        <div id="gpsStatus" class="gps mono" aria-live="polite"></div>
+      </div>
+
+      <div id="lastSpot" class="last hidden"></div>
+    </section>
+
+    <!-- Liste -->
+    <section id="tab-liste" class="tab">
+      <div class="listbar">
+        <input id="listSearch" class="search" type="search" placeholder="Suchen … (Kürzel oder Stadt)" aria-label="Liste durchsuchen">
+        <span id="listCount" class="mono list-count"></span>
+      </div>
+      <ul id="spotList" class="spotlist"></ul>
+      <p id="listEmpty" class="empty">Noch keine Sichtungen. Auf „Erfassen" das erste Kennzeichen eintragen.</p>
+    </section>
+
+    <!-- Karte -->
+    <section id="tab-karte" class="tab">
+      <div id="map" class="map"></div>
+      <p id="mapEmpty" class="empty">Sobald Sichtungen mit GPS-Position vorliegen, erscheinen sie hier als Marker.</p>
+    </section>
+
+    <!-- Statistik -->
+    <section id="tab-statistik" class="tab">
+      <div class="stat-total">
+        <div class="stat-big"><span id="statSpotted">0</span><span class="stat-of"> / <span id="statTotal">0</span></span></div>
+        <div class="stat-label">Unterscheidungszeichen gesammelt</div>
+        <div class="bar"><div id="statBar" class="bar-fill"></div></div>
+      </div>
+      <ul id="statStates" class="statlist"></ul>
+    </section>
+
+    <!-- Mehr -->
+    <section id="tab-mehr" class="tab">
+      <h2 class="h2">Kennzeichen-Datenbank</h2>
+      <p class="p">
+        <span id="dsInfo" class="mono"></span><br>
+        Quelle: <a href="https://github.com/openpotato/kfz-kennzeichen" target="_blank" rel="noopener">openpotato/kfz-kennzeichen</a>
+      </p>
+      <button id="refreshBtn" class="btn">Liste jetzt aktualisieren</button>
+      <div id="refreshStatus" class="mono status" aria-live="polite"></div>
+
+      <h2 class="h2">Sicherung</h2>
+      <p class="p">Deine Sichtungen liegen nur in diesem Browser. Regelmäßig exportieren!</p>
+      <div class="btnrow">
+        <button id="exportJsonBtn" class="btn">Backup exportieren (JSON)</button>
+        <button id="exportCsvBtn" class="btn">Tabelle exportieren (CSV)</button>
+      </div>
+      <label class="btn btn-file" for="importFile">Backup importieren (JSON)</label>
+      <input id="importFile" type="file" accept="application/json,.json" class="visually-hidden">
+      <div id="importStatus" class="mono status" aria-live="polite"></div>
+
+      <h2 class="h2">Sicherheit</h2>
+      <button id="changePinBtn" class="btn">PIN ändern</button>
+
+      <h2 class="h2">Gefahrenzone</h2>
+      <button id="wipeBtn" class="btn btn-danger">Alle Sichtungen löschen</button>
+    </section>
+
+  </main>
+
+  <nav class="tabbar" aria-label="Bereiche">
+    <button class="tabbtn active" data-tab="erfassen">Erfassen</button>
+    <button class="tabbtn" data-tab="liste">Liste</button>
+    <button class="tabbtn" data-tab="karte">Karte</button>
+    <button class="tabbtn" data-tab="statistik">Statistik</button>
+    <button class="tabbtn" data-tab="mehr">Mehr</button>
+  </nav>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="./data.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

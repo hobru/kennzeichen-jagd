@@ -1,0 +1,15 @@
+{
+  "name": "Kennzeichen-Jagd",
+  "short_name": "KJ",
+  "description": "Deutsche Kfz-Kennzeichen spotten und sammeln",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1E2124",
+  "theme_color": "#17191C",
+  "lang": "de",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

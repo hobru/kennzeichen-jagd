@@ -1,0 +1,200 @@
+/* ── Kennzeichen-Jagd · Design-Tokens ─────────────────────────
+   Asphalt:   #1E2124  (App-Hintergrund, wie Fahrbahn)
+   Nacht:     #16181B  (Leisten)
+   Schild:    #F8F8F4  (Kennzeichen-Weiß)
+   Prägung:   #17191C  (Schrift auf Schild)
+   EU-Blau:   #003399  (Euroband, Primäraktionen)
+   Plakette:  #1F7A3D  (HU-Plakette grün = gesammelt)
+   Warnbake:  #C4841D  (Duplikate, Hinweise)
+   Rot:       #B3261E  (Gefahr)
+---------------------------------------------------------------- */
+:root{
+  --asphalt:#1E2124; --night:#16181B; --schild:#F8F8F4; --praegung:#17191C;
+  --eu:#003399; --eu-hell:#2450C7; --plakette:#1F7A3D; --warn:#C4841D; --rot:#B3261E;
+  --grau:#9BA1A6; --linie:#33383D;
+  --f-plate:"Barlow Semi Condensed",sans-serif;
+  --f-body:"Barlow",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",monospace;
+  --r:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--asphalt); color:var(--schild);
+  font-family:var(--f-body); font-size:16px; line-height:1.45;
+  min-height:100dvh;
+  /* dezente Fahrbahnmarkierung links */
+  background-image:linear-gradient(to bottom,#3d4348 0 42px,transparent 42px 70px);
+  background-size:4px 112px; background-repeat:repeat-y; background-position:12px 0;
+}
+.hidden{display:none!important}
+.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.mono{font-family:var(--f-mono);font-size:.82em;color:var(--grau)}
+a{color:#7FA3F0}
+button{font:inherit}
+:focus-visible{outline:3px solid var(--eu-hell);outline-offset:2px;border-radius:4px}
+
+/* ── Kennzeichen-Bauteile ── */
+.euroband{
+  display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+  background:var(--eu);color:#FFD617;border-radius:6px 0 0 6px;
+  padding:4px 7px;align-self:stretch;min-width:34px;gap:1px;
+}
+.euroband .stars{font-size:12px;line-height:1}
+.euroband .d{color:#fff;font-family:var(--f-plate);font-weight:700;font-size:15px;line-height:1}
+.euroband.small{min-width:26px;padding:2px 5px;border-radius:4px 0 0 4px}
+.euroband.small .stars{font-size:9px}
+.euroband.small .d{font-size:11px}
+
+/* ── Kopfleiste ── */
+.topbar{
+  position:sticky;top:0;z-index:20;background:var(--night);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:calc(env(safe-area-inset-top) + 10px) 14px 10px;
+  border-bottom:1px solid var(--linie);
+}
+.topbar-plate{display:flex;align-items:stretch;background:var(--schild);border-radius:5px;overflow:hidden;border:1.5px solid #000}
+.app-name{color:var(--praegung);font-family:var(--f-plate);font-weight:700;letter-spacing:.06em;padding:4px 10px;font-size:15px}
+.chip{font-family:var(--f-mono);font-size:13px;color:var(--schild);background:#26527d00;border:1px solid var(--linie);border-radius:99px;padding:4px 10px}
+
+main{padding:16px 14px calc(84px + env(safe-area-inset-bottom));max-width:640px;margin:0 auto}
+.tab{display:none}
+.tab.active{display:block}
+
+/* ── Das Schild (Eingabe) ── */
+.plate{
+  display:flex;align-items:stretch;background:var(--schild);
+  border:2.5px solid #000;border-radius:10px;overflow:hidden;
+  box-shadow:0 6px 18px rgba(0,0,0,.45), inset 0 1px 0 #fff;
+  height:74px;
+}
+.plate-input{
+  flex:0 1 auto;width:7ch;min-width:4.2ch;border:0;background:transparent;color:var(--praegung);
+  font-family:var(--f-plate);font-weight:700;font-size:44px;letter-spacing:.05em;
+  text-transform:uppercase;padding:0 4px 0 12px;outline:none;
+}
+.plate-rest{align-self:center;color:#B9BDB6;font-family:var(--f-plate);font-weight:700;font-size:38px;letter-spacing:.04em;user-select:none;white-space:nowrap}
+.suggest{
+  list-style:none;margin:6px 0 0;padding:6px;background:var(--night);
+  border:1px solid var(--linie);border-radius:var(--r);
+}
+.suggest li{
+  display:flex;justify-content:space-between;gap:12px;padding:10px 10px;border-radius:8px;cursor:pointer
+}
+.suggest li:hover,.suggest li[aria-selected="true"]{background:#23272B}
+.suggest .s-code{font-family:var(--f-plate);font-weight:700;letter-spacing:.06em}
+.suggest .s-city{color:var(--grau);text-align:right}
+.suggest .spotted .s-code::after{content:"●";color:var(--plakette);margin-left:7px;font-size:.7em;vertical-align:2px}
+
+/* ── Ergebnis ── */
+.result{margin-top:18px;background:var(--night);border:1px solid var(--linie);border-radius:var(--r);padding:16px}
+.result-head{display:flex;align-items:center;gap:10px}
+.res-code{font-family:var(--f-plate);font-weight:700;font-size:22px;letter-spacing:.08em}
+.badge{font-size:12px;font-weight:600;border-radius:99px;padding:3px 10px;background:var(--plakette);color:#fff}
+.badge.warn{background:var(--warn)}
+.res-city{font-size:24px;font-weight:600;margin-top:4px}
+.res-meta{display:flex;justify-content:space-between;gap:8px;margin-top:2px;color:var(--grau)}
+.dup{margin-top:12px;border-left:4px solid var(--warn);background:#2A2419;padding:10px 12px;border-radius:0 8px 8px 0;color:#E8C888}
+.gps{margin-top:10px;min-height:1.2em}
+
+/* ── Buttons ── */
+.btn{
+  display:inline-block;background:#23272B;color:var(--schild);border:1px solid var(--linie);
+  border-radius:var(--r);padding:11px 16px;font-weight:600;cursor:pointer;margin-top:10px;
+}
+.btn:hover{background:#2A2F34}
+.btn-primary{background:var(--eu);border-color:var(--eu);color:#fff}
+.btn-primary:hover{background:var(--eu-hell)}
+.btn-primary:disabled{background:#2A2F34;border-color:var(--linie);color:var(--grau);cursor:not-allowed}
+.btn-big{width:100%;padding:15px;font-size:18px;margin-top:16px}
+.btn-danger{border-color:var(--rot);color:#F2B8B4}
+.btn-danger:hover{background:#33201F}
+.btn-file{text-align:center}
+.btnrow{display:flex;flex-wrap:wrap;gap:10px}
+.btnrow .btn{flex:1 1 45%}
+
+.last{margin-top:14px;color:var(--grau);font-size:14px}
+
+/* ── Liste ── */
+.listbar{display:flex;align-items:center;gap:10px}
+.search{
+  flex:1;background:var(--night);border:1px solid var(--linie);border-radius:var(--r);
+  color:var(--schild);padding:11px 12px;font:inherit
+}
+.list-count{white-space:nowrap}
+.spotlist{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.spot{
+  display:flex;align-items:stretch;background:var(--schild);color:var(--praegung);
+  border:2px solid #000;border-radius:8px;overflow:hidden;
+}
+.spot-code{
+  font-family:var(--f-plate);font-weight:700;font-size:24px;letter-spacing:.06em;
+  display:flex;align-items:center;padding:0 12px;min-width:74px;
+}
+.spot-body{flex:1;padding:8px 4px 8px 0;border-left:1px dashed #C9CCC4;padding-left:12px}
+.spot-city{font-weight:600;line-height:1.2}
+.spot-meta{font-family:var(--f-mono);font-size:12px;color:#5E645F;margin-top:2px}
+.spot-del{
+  border:0;background:transparent;color:#8A9089;padding:0 12px;cursor:pointer;font-size:18px
+}
+.spot-del:hover{color:var(--rot)}
+.empty{color:var(--grau);text-align:center;margin-top:32px}
+
+/* ── Karte ── */
+.map{height:calc(100dvh - 220px);min-height:340px;border-radius:var(--r);border:1px solid var(--linie)}
+.leaflet-container{background:#101214}
+
+/* ── Statistik ── */
+.stat-total{background:var(--night);border:1px solid var(--linie);border-radius:var(--r);padding:18px;text-align:center}
+.stat-big{font-family:var(--f-plate);font-weight:700;font-size:46px;line-height:1}
+.stat-of{color:var(--grau);font-size:24px}
+.stat-label{color:var(--grau);margin-top:4px}
+.bar{height:10px;background:#101214;border-radius:99px;margin-top:14px;overflow:hidden}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--eu),var(--eu-hell));width:0;border-radius:99px;transition:width .5s ease}
+@media (prefers-reduced-motion: reduce){.bar-fill{transition:none}}
+.statlist{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.statrow{background:var(--night);border:1px solid var(--linie);border-radius:var(--r);padding:10px 14px}
+.statrow .top{display:flex;justify-content:space-between;gap:8px}
+.statrow .name{font-weight:600}
+.statrow .nums{font-family:var(--f-mono);font-size:13px;color:var(--grau)}
+.statrow .bar{margin-top:8px;height:7px}
+.statrow.done .bar-fill{background:var(--plakette)}
+
+/* ── Mehr ── */
+.h2{font-family:var(--f-plate);font-weight:700;letter-spacing:.04em;font-size:17px;text-transform:uppercase;
+    color:var(--grau);margin:26px 0 6px;border-top:1px solid var(--linie);padding-top:18px}
+#tab-mehr .h2:first-child{border-top:0;margin-top:4px;padding-top:0}
+.p{margin:4px 0 8px;color:#C7CBCE}
+.status{display:block;margin-top:8px;min-height:1.2em}
+
+/* ── Tab-Leiste ── */
+.tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--night);
+  border-top:1px solid var(--linie);display:flex;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.tabbtn{
+  flex:1;background:transparent;border:0;color:var(--grau);padding:13px 2px 12px;
+  font-weight:600;font-size:13px;cursor:pointer;border-top:3px solid transparent;
+}
+.tabbtn.active{color:var(--schild);border-top-color:var(--eu-hell)}
+
+/* ── Sperrbildschirm ── */
+.lock{position:fixed;inset:0;background:var(--asphalt);z-index:50;display:flex;align-items:center;justify-content:center;padding:20px}
+.lock-card{width:100%;max-width:340px;text-align:center}
+.lock-plate{display:flex;align-items:stretch;background:var(--schild);border:2.5px solid #000;border-radius:10px;overflow:hidden;margin:0 auto 18px;width:max-content}
+.lock-title{color:var(--praegung);font-family:var(--f-plate);font-weight:700;font-size:26px;letter-spacing:.08em;padding:8px 16px}
+.lock-msg{color:#C7CBCE;min-height:2.6em}
+.pin-input{
+  width:100%;background:var(--night);border:1px solid var(--linie);border-radius:var(--r);
+  color:var(--schild);font-family:var(--f-mono);font-size:26px;letter-spacing:.5em;text-align:center;
+  padding:12px;outline:none
+}
+.lock .btn{width:100%}
+.lock-hint{color:var(--grau);font-size:13px;margin-top:18px}
+
+@media (min-width:520px){
+  .plate{height:84px}
+  .plate-input{font-size:52px}
+  .plate-rest{font-size:44px}
+}
