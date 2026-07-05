@@ -601,6 +601,8 @@
     $("scanBtn").addEventListener("click", openScan);
     $("scanShot").addEventListener("click", shootScan);
     $("scanCancel").addEventListener("click", stopScan);
+    $("checkUpdBtn").addEventListener("click", checkForUpdate);
+    $("updReload").addEventListener("click", () => location.reload());
     document.querySelectorAll(".mapbtn").forEach((btn) => {
       btn.addEventListener("click", () => {
         mapMode = btn.dataset.mode;
@@ -629,8 +631,40 @@
   $("verTop").textContent = "v" + V;
   $("aboutLine").textContent = "Kennzeichen-Jagd v" + V;
   setTimeout(() => $("plateInput").focus(), 50);
+  // ── Service Worker & App-Updates ────────────────────────────
+  let swReg = null, updateInstalling = false;
   if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () =>
-      navigator.serviceWorker.register("./sw.js").catch(() => {}));
+    const hadController = !!navigator.serviceWorker.controller;
+    window.addEventListener("load", async () => {
+      try {
+        swReg = await navigator.serviceWorker.register("./sw.js");
+        swReg.addEventListener("updatefound", () => {
+          updateInstalling = true;
+          $("updStatus").textContent = "Update wird installiert …";
+        });
+        // Bei jedem In-den-Vordergrund-Holen nach neuer Version suchen
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") swReg.update().catch(() => {});
+        });
+      } catch (_) {}
+    });
+    // Neue Version hat übernommen → Neustart anbieten
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!hadController) return;           // allererste Installation, kein Update
+      $("updBar").classList.remove("hidden");
+      $("updStatus").textContent = "Update bereit.";
+    });
+  }
+  async function checkForUpdate() {
+    const st = $("updStatus");
+    if (!swReg) { st.textContent = "Kein Service Worker aktiv (Seite neu laden)."; return; }
+    st.textContent = "Suche nach Update …";
+    updateInstalling = false;
+    try { await swReg.update(); } catch (_) {}
+    setTimeout(() => {
+      if (!updateInstalling && $("updBar").classList.contains("hidden")) {
+        st.textContent = "Du bist aktuell (v" + (window.APP_VERSION || "?") + ").";
+      }
+    }, 3000);
   }
 })();

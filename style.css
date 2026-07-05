@@ -215,3 +215,14 @@ main{padding:16px 14px calc(84px + env(safe-area-inset-bottom));max-width:640px;
 .scan-status{color:var(--schild);font-family:var(--f-mono);font-size:14px;min-height:1.4em;text-align:center;margin:0}
 .scan-actions{display:flex;gap:12px;width:100%;max-width:560px}
 .scan-actions .btn{flex:1;margin-top:0}
+
+/* Update-Banner */
+.updbar{
+  position:fixed;left:12px;right:12px;bottom:calc(64px + env(safe-area-inset-bottom));z-index:30;
+  background:var(--eu);color:#fff;border-radius:var(--r);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 10px 10px 16px;font-weight:600;
+  box-shadow:0 8px 24px rgba(0,0,0,.5)
+}
+.updbar .btn{margin-top:0;background:#fff;color:var(--eu);border-color:#fff}
+.updbar .btn:hover{background:#E8ECFA}
