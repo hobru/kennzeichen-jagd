@@ -47,7 +47,9 @@ self.addEventListener("fetch", (e) => {
           (url.origin === self.location.origin ||
             url.hostname === "fonts.googleapis.com" ||
             url.hostname === "fonts.gstatic.com" ||
-            url.hostname === "cdnjs.cloudflare.com")
+            url.hostname === "cdnjs.cloudflare.com" ||
+            url.hostname === "cdn.jsdelivr.net" ||            // Tesseract Worker/Core
+            url.hostname === "tessdata.projectnaptha.com")    // OCR-Sprachdaten
         ) {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(e.request, copy));

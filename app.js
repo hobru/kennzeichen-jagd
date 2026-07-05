@@ -433,6 +433,119 @@
     reader.readAsText(file);
   }
 
+  // ── Scanner (Kamera + OCR) ─────────────────────────────────
+  const TESSERACT_URL =
+    "https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js";
+  let ocrWorker = null, scanStream = null;
+
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      if (document.querySelector('script[src="' + src + '"]')) return res();
+      const s = document.createElement("script");
+      s.src = src; s.onload = res; s.onerror = () => rej(new Error("Laden fehlgeschlagen"));
+      document.head.appendChild(s);
+    });
+  }
+  async function ensureOCR(status) {
+    if (ocrWorker) return ocrWorker;
+    status("Texterkennung wird geladen … (einmalig, danach gecacht)");
+    await loadScript(TESSERACT_URL);
+    ocrWorker = await Tesseract.createWorker("deu");
+    await ocrWorker.setParameters({ tessedit_pageseg_mode: "7" }); // eine Textzeile
+    return ocrWorker;
+  }
+
+  // OCR-typische Verwechsler in Buchstaben zurückübersetzen
+  const LOOKALIKE = { "0": "O", "1": "I", "2": "Z", "4": "A", "5": "S", "6": "G", "8": "B" };
+  function parsePlateText(text) {
+    const tokens = (text.toUpperCase().match(/[A-Z0-9ÄÖÜ]+/g) || []);
+    for (const tRaw of tokens) {
+      const variants = [tRaw,
+        tRaw.replace(/[0-9]/g, (d) => LOOKALIKE[d] || d)];
+      for (const t of variants) {
+        const m = t.match(/^[A-ZÄÖÜ]{1,3}/);
+        if (!m) continue;
+        // längste gültige Übereinstimmung bevorzugen
+        for (let len = m[0].length; len >= 1; len--) {
+          const cand = m[0].slice(0, len);
+          if (byCode.has(cand)) return cand;
+        }
+      }
+    }
+    return null;
+  }
+
+  function stopScan() {
+    if (scanStream) { scanStream.getTracks().forEach((t) => t.stop()); scanStream = null; }
+    $("scanModal").classList.add("hidden");
+  }
+
+  async function openScan() {
+    const modal = $("scanModal"), video = $("scanVideo"), st = $("scanStatus");
+    const status = (t) => { st.textContent = t; };
+    modal.classList.remove("hidden");
+    status("Kamera startet …");
+    try {
+      scanStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment", width: { ideal: 1920 } },
+        audio: false,
+      });
+      video.srcObject = scanStream;
+      await video.play();
+      status("Kennzeichen in den gelben Rahmen halten, dann „Scannen“.");
+    } catch (err) {
+      status("Kein Kamerazugriff: " + err.message);
+    }
+  }
+
+  async function shootScan() {
+    const video = $("scanVideo"), canvas = $("scanCanvas"), st = $("scanStatus");
+    const status = (t) => { st.textContent = t; };
+    if (!scanStream || !video.videoWidth) return;
+    // Bildausschnitt = gelber Rahmen (6 % Rand, Seitenverhältnis 4.7:1, vertikal mittig)
+    const vw = video.videoWidth, vh = video.videoHeight;
+    const gw = vw * 0.88, gh = gw / 4.7, gx = vw * 0.06, gy = (vh - gh) / 2;
+    const W = 1200, H = Math.round(W * gh / gw);
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(video, gx, gy, gw, gh, 0, 0, W, H);
+    // Vorverarbeitung: Graustufen + Kontrastspreizung
+    const img = ctx.getImageData(0, 0, W, H), d = img.data;
+    let min = 255, max = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+      d[i] = d[i + 1] = d[i + 2] = g;
+      if (g < min) min = g; if (g > max) max = g;
+    }
+    const span = Math.max(1, max - min);
+    for (let i = 0; i < d.length; i += 4) {
+      const v = ((d[i] - min) / span) * 255;
+      d[i] = d[i + 1] = d[i + 2] = v;
+    }
+    ctx.putImageData(img, 0, 0);
+    try {
+      const worker = await ensureOCR(status);
+      status("Erkenne Schrift …");
+      const { data } = await worker.recognize(canvas);
+      const raw = (data.text || "").trim();
+      const code = parsePlateText(raw);
+      if (code) {
+        stopScan();
+        const input = $("plateInput");
+        input.value = code;
+        $("suggest").classList.add("hidden");
+        showResult(code);
+        input.focus();
+      } else {
+        status(raw
+          ? "Kein gültiges Kürzel erkannt („" + raw.slice(0, 25) + "“) – näher ran und erneut scannen."
+          : "Nichts erkannt – näher ran, gerade halten, erneut scannen.");
+      }
+    } catch (err) {
+      status("Texterkennung fehlgeschlagen: " + err.message);
+    }
+  }
+
   // ── Verdrahtung ─────────────────────────────────────────────
   function wire() {
     const input = $("plateInput");
@@ -485,6 +598,9 @@
       saveJSON(LS.spots, spots);
       renderAll();
     });
+    $("scanBtn").addEventListener("click", openScan);
+    $("scanShot").addEventListener("click", shootScan);
+    $("scanCancel").addEventListener("click", stopScan);
     document.querySelectorAll(".mapbtn").forEach((btn) => {
       btn.addEventListener("click", () => {
         mapMode = btn.dataset.mode;

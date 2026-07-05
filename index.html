@@ -43,6 +43,12 @@
         <input id="plateInput" class="plate-input" type="text" autocomplete="off" autocapitalize="characters"
                spellcheck="false" placeholder="FL" aria-describedby="resultBox">
         <span class="plate-rest" aria-hidden="true">– XX 123</span>
+        <button id="scanBtn" class="scan-btn" title="Kennzeichen mit Kamera scannen" aria-label="Kennzeichen mit Kamera scannen">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </button>
       </div>
       <ul id="suggest" class="suggest hidden" role="listbox"></ul>
 
@@ -132,6 +138,20 @@
     <button class="tabbtn" data-tab="statistik">Statistik</button>
     <button class="tabbtn" data-tab="mehr">Mehr</button>
   </nav>
+</div>
+
+<!-- ── Scanner ─────────────────────────────────────── -->
+<div id="scanModal" class="scanmodal hidden" role="dialog" aria-modal="true" aria-label="Kennzeichen scannen">
+  <div class="scan-stage">
+    <video id="scanVideo" playsinline muted></video>
+    <div class="scan-guide" aria-hidden="true"></div>
+  </div>
+  <p id="scanStatus" class="scan-status" aria-live="polite">Kennzeichen in den Rahmen halten</p>
+  <div class="scan-actions">
+    <button id="scanCancel" class="btn">Abbrechen</button>
+    <button id="scanShot" class="btn btn-primary">Scannen</button>
+  </div>
+  <canvas id="scanCanvas" class="hidden"></canvas>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>

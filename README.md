@@ -15,6 +15,7 @@ Eine Progressive Web App (PWA) zum Sammeln deutscher Kfz-Unterscheidungszeichen:
 
 ## Funktionen
 
+- **Scannen:** Kamera-Button neben der Eingabe: Kennzeichen in den Rahmen halten, die Schrift wird direkt auf dem Gerät erkannt (Tesseract.js/OCR) und gegen die Kennzeichenliste geprüft – Fotos verlassen das Handy nie. Erkennung klappt am besten frontal und bei gutem Licht; das Ergebnis füllt nur das Eingabefeld, gespeichert wird erst nach Bestätigung.
 - **Erfassen:** Kürzel tippen (auch komplettes Kennzeichen wie `FL-AB 123` – das Kürzel wird automatisch erkannt), Autovervollständigung, Anzeige von Stadt/Kreis, Bundesland und Herleitung des Kürzels.
 - **Duplikate:** Bereits gesammelte Kürzel werden erkannt und mit Datum/Ort der Erstsichtung angezeigt.
 - **Liste:** Alle Sichtungen als Mini-Kennzeichen, durchsuchbar, einzeln löschbar.
