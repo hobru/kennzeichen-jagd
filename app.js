@@ -238,13 +238,15 @@
       .filter((s) => !q || s.code.includes(q) || s.city.toUpperCase().includes(q))
       .sort((a, b) => b.ts - a.ts);
     $("spotList").innerHTML = items.map((s) => `
-      <li class="spot">
+      <li class="spot" data-code="${esc(s.code)}" tabindex="0" role="button"
+          aria-label="${esc(s.code)} – ${esc(s.city)} auf der Karte zeigen">
         <span class="spot-code">${esc(s.code)}</span>
         <span class="spot-body">
           <span class="spot-city">${esc(s.city)} · ${esc(STATES[s.state] || s.state)}</span>
           <span class="spot-meta">${esc(fmtDate(s.ts))}${
             s.lat != null ? " · " + s.lat.toFixed(4) + ", " + s.lon.toFixed(4) : ""}</span>
         </span>
+        <span class="spot-go" aria-hidden="true">›</span>
         <button class="spot-del" data-code="${esc(s.code)}"
                 aria-label="Sichtung ${esc(s.code)} löschen">✕</button>
       </li>`).join("");
@@ -437,6 +439,12 @@
   }
 
   function renderAll() { renderList(); renderStats(); if (map) renderMap(); }
+
+  // Aus der Liste: zur Karte wechseln und Herkunftsort anfliegen
+  function showOnMap(code) {
+    switchTab("karte");                       // initialisiert die Karte bei Bedarf
+    setTimeout(() => gotoOrigin(code), 180);  // erst Größe setzen lassen, dann anfliegen
+  }
 
   // ── Export / Import ─────────────────────────────────────────
   function exportJSON() {
@@ -633,12 +641,21 @@
     $("listSearch").addEventListener("input", renderList);
     $("spotList").addEventListener("click", (e) => {
       const btn = e.target.closest(".spot-del");
-      if (!btn) return;
-      if (!confirm(btn.dataset.code + " wirklich aus der Sammlung löschen?")) return;
-      spots = spots.filter((s) => s.code !== btn.dataset.code);
-      saveJSON(LS.spots, spots);
-      renderAll();
-      if (current) showResult(current[0]);
+      if (btn) {
+        if (!confirm(btn.dataset.code + " wirklich aus der Sammlung löschen?")) return;
+        spots = spots.filter((s) => s.code !== btn.dataset.code);
+        saveJSON(LS.spots, spots);
+        renderAll();
+        if (current) showResult(current[0]);
+        return;
+      }
+      const row = e.target.closest(".spot[data-code]");
+      if (row) showOnMap(row.dataset.code);
+    });
+    $("spotList").addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const row = e.target.closest(".spot[data-code]");
+      if (row) { e.preventDefault(); showOnMap(row.dataset.code); }
     });
     $("refreshBtn").addEventListener("click", refreshDataset);
     $("exportJsonBtn").addEventListener("click", exportJSON);
@@ -668,15 +685,17 @@
       });
     });
     document.querySelectorAll(".tabbtn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".tabbtn").forEach((b) =>
-          b.classList.toggle("active", b === btn));
-        document.querySelectorAll(".tab").forEach((t) =>
-          t.classList.toggle("active", t.id === "tab-" + btn.dataset.tab));
-        if (btn.dataset.tab === "karte") renderMap();
-        if (btn.dataset.tab === "statistik") renderStats();
-      });
+      btn.addEventListener("click", () => switchTab(btn.dataset.tab));
     });
+  }
+
+  function switchTab(name) {
+    document.querySelectorAll(".tabbtn").forEach((b) =>
+      b.classList.toggle("active", b.dataset.tab === name));
+    document.querySelectorAll(".tab").forEach((t) =>
+      t.classList.toggle("active", t.id === "tab-" + name));
+    if (name === "karte") renderMap();
+    if (name === "statistik") renderStats();
   }
 
   // ── Start ───────────────────────────────────────────────────

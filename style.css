@@ -230,3 +230,9 @@ main{padding:16px 14px calc(84px + env(safe-area-inset-bottom));max-width:640px;
 /* Popup-Links */
 .leaflet-popup-content a{color:var(--eu);font-weight:600;text-decoration:none}
 .leaflet-popup-content a:hover{text-decoration:underline}
+
+/* Klickbare Listeneinträge */
+.spot{cursor:pointer}
+.spot:hover{box-shadow:0 3px 12px rgba(0,0,0,.4)}
+.spot:active{transform:translateY(1px)}
+.spot-go{align-self:center;color:#9AA09A;font-size:24px;font-weight:600;padding:0 2px 3px 6px;user-select:none}
