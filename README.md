@@ -24,6 +24,20 @@ Eine Progressive Web App (PWA) zum Sammeln deutscher Kfz-Unterscheidungszeichen:
 - **Datenbank:** ~714 Unterscheidungszeichen sind mitgeliefert (`data.js`). Unter **Mehr → Liste jetzt aktualisieren** wird die aktuelle Liste von [openpotato/kfz-kennzeichen](https://github.com/openpotato/kfz-kennzeichen) geladen und lokal gecacht.
 - **Backup:** Export als JSON (vollständig, re-importierbar) oder CSV (für Excel). Import führt Backups zusammen, ohne Duplikate anzulegen.
 
+
+## Siri-Kurzbefehl (freihändig im Auto)
+
+Die App versteht den Deep Link `?add=KÜRZEL`, z. B. `https://hobru.github.io/kennzeichen-jagd/?add=FL` – das speichert die Sichtung sofort (mit GPS und Zeitstempel) und sagt das Ergebnis per Sprachausgabe an. Damit lässt sich ein Siri-Kurzbefehl bauen:
+
+1. **Kurzbefehle**-App öffnen → **+** → Name z. B. „Kennzeichen".
+2. Aktion **„Text diktieren"** hinzufügen (Sprache: Deutsch, „Anhalten nach: Pause").
+3. Aktion **„URL"** hinzufügen: `https://hobru.github.io/kennzeichen-jagd/?add=` und dahinter die Variable **Diktierter Text** einfügen.
+4. Aktion **„URLs öffnen"** hinzufügen.
+
+Dann im Auto: „Hey Siri, Kennzeichen" → Kürzel sprechen („FL") → die App öffnet sich, speichert und bestätigt per Sprachausgabe. Duplikate werden erkannt und angesagt statt doppelt gespeichert.
+
+**Wichtig (iOS):** Kurzbefehle öffnen URLs in Safari – und Safari und die Homescreen-App haben **getrennte Speicher**. Sichtungen aus dem Kurzbefehl landen also in der Safari-Instanz. Die App zeigt in dem Fall einen Hinweis an; zusammenführen geht jederzeit verlustfrei über Backup-Export (Safari) → Import (Homescreen-App). Wer den Kurzbefehl viel nutzt, fährt am einfachsten, wenn er die App generell in Safari verwendet statt sie zu pinnen.
+
 ## Grenzen & Hinweise
 
 - Daten liegen im `localStorage` des Browsers. **Browserdaten löschen = Sammlung weg.** Deshalb regelmäßig das JSON-Backup exportieren (z. B. in die Cloud-Ablage deiner Wahl).

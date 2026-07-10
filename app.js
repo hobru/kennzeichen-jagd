@@ -200,7 +200,7 @@
     });
   }
 
-  async function saveSpot() {
+  async function saveSpot(force) {
     if (!current || findSpot(current[0])) return;
     const btn = $("saveBtn"), gps = $("gpsStatus");
     btn.disabled = true; btn.textContent = "Hole GPS-Position …";
@@ -208,7 +208,7 @@
     let usePos = pos;
     if (!pos) {
       gps.textContent = "Keine GPS-Position verfügbar.";
-      if (!confirm("Ohne Standort speichern?")) {
+      if (!force && !confirm("Ohne Standort speichern?")) {
         btn.disabled = false; btn.textContent = "Sichtung speichern"; return;
       }
       usePos = null;
@@ -610,6 +610,49 @@
     }
   }
 
+  // ── Deep Link: ?add=FL  (z. B. per Siri-Kurzbefehl) ─────────
+  function say(text) {
+    try {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "de-DE";
+      speechSynthesis.speak(u);
+    } catch (_) {}
+  }
+  async function handleDeepLink() {
+    const raw = new URLSearchParams(location.search).get("add");
+    if (!raw) return;
+    history.replaceState(null, "", location.pathname); // Reload soll nicht erneut speichern
+    const code = extractCode(raw.trim());
+    const entry = code ? byCode.get(code) : null;
+    const input = $("plateInput");
+    input.value = code || raw.toUpperCase().slice(0, 3);
+    if (!entry) {
+      showResult("");
+      $("lastSpot").textContent = "Per Kurzbefehl empfangen: „" + raw +
+        "“ – kein gültiges Kürzel erkannt.";
+      $("lastSpot").classList.remove("hidden");
+      say("Kürzel nicht erkannt");
+      renderSuggestions(input.value);
+      return;
+    }
+    showResult(code);
+    const dup = findSpot(code);
+    if (dup) {
+      say(code.split("").join(" ") + ", " + entry[1] + ". Bereits gesichtet.");
+    } else {
+      await saveSpot(true);   // freihändig: ohne Rückfrage, notfalls ohne Standort
+      say(code.split("").join(" ") + ", " + entry[1] + ". Gespeichert.");
+    }
+    // iOS: Safari und Homescreen-App haben getrennte Speicher
+    if ("standalone" in navigator && !navigator.standalone) {
+      const hint = $("dlHint");
+      hint.textContent = "Hinweis: Diese Sichtung wurde im Safari-Speicher abgelegt. " +
+        "Die App auf dem Homescreen hat einen eigenen, getrennten Speicher. " +
+        "Zusammenführen: hier unter „Mehr“ das Backup exportieren und in der Homescreen-App importieren.";
+      hint.classList.remove("hidden");
+    }
+  }
+
   // ── Verdrahtung ─────────────────────────────────────────────
   function wire() {
     const input = $("plateInput");
@@ -637,7 +680,7 @@
       showResult(li.dataset.code);
       input.focus();
     });
-    $("saveBtn").addEventListener("click", saveSpot);
+    $("saveBtn").addEventListener("click", () => saveSpot(false));
     $("listSearch").addEventListener("input", renderList);
     $("spotList").addEventListener("click", (e) => {
       const btn = e.target.closest(".spot-del");
@@ -705,6 +748,7 @@
   const V = window.APP_VERSION || "?";
   $("verTop").textContent = "v" + V;
   $("aboutLine").textContent = "Kennzeichen-Jagd v" + V;
+  handleDeepLink();
   setTimeout(() => $("plateInput").focus(), 50);
   // ── Service Worker & App-Updates ────────────────────────────
   let swReg = null, updateInstalling = false;
